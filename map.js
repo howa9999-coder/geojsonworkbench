@@ -31,6 +31,8 @@ if (navigator.geolocation) {
     alert("Geolocation is not supported by this browser")
 }
 
+//======================================================Layers
+
 var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -44,7 +46,77 @@ var CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all
 	subdomains: 'abcd',
 	maxZoom: 20
 });
+// const masterLayer = L.featureGroup().addTo(map);
 
+//============================================== MASTERlAYER
+/* // Try to load from localStorage
+let masterLayer;
+
+const storedLayer = localStorage.getItem('masterLayer');
+if (storedLayer) {
+  try {
+    // Parse the stored GeoJSON and create a feature group
+    const geojson = JSON.parse(storedLayer);
+    masterLayer = L.geoJSON(geojson).addTo(map);
+  } catch (e) {
+    console.error('Failed to parse stored layer:', e);
+    // Fallback to empty feature group
+    masterLayer = L.featureGroup().addTo(map);
+  }
+} else {
+  // Create new feature group if nothing is stored
+  masterLayer = L.featureGroup().addTo(map);
+}
+
+//Store masterLayer in the localstorage
+function saveMasterLayer() {
+  if (masterLayer) {
+    const geojson = masterLayer.toGeoJSON();
+    localStorage.setItem('masterLayer', JSON.stringify(geojson));
+  }
+} */
+let masterLayer;
+
+const storedLayer = localStorage.getItem('masterLayer');
+if (storedLayer) {
+  try {
+    const geojson = JSON.parse(storedLayer);
+    
+    // Function to apply styles from feature properties
+    const style = (feature) => {
+      return {
+        color: feature.properties.color || '#3388ff', // Default color if none specified
+        weight: feature.properties.weight || 3,
+        opacity: feature.properties.opacity || 0.7,
+        fillOpacity: feature.properties.fillOpacity || 0.4,
+        // Add any other style properties you want to support
+      };
+    };
+
+    // Create the GeoJSON layer with custom styling
+    masterLayer = L.geoJSON(geojson, {
+      style: style,
+      pointToLayer: (feature, latlng) => {
+        // Special handling for point features
+        return L.circleMarker(latlng, style(feature));
+      }
+    }).addTo(map);
+    
+  } catch (e) {
+    console.error('Failed to parse stored layer:', e);
+    masterLayer = L.featureGroup().addTo(map);
+  }
+} else {
+  masterLayer = L.featureGroup().addTo(map);
+}
+
+// Function to save the layer with all properties
+function saveMasterLayer() {
+  if (masterLayer) {
+    const geojson = masterLayer.toGeoJSON();
+    localStorage.setItem('masterLayer', JSON.stringify(geojson));
+  }
+}
 //======================================================LAYER CONTROL
 var baseMaps = {
     "CartoDB_DarkMatter": CartoDB_DarkMatter,
@@ -56,8 +128,9 @@ var layerControl = L.control.layers(baseMaps).addTo(map);
 
 //======================================================Add scalebar to map
 L.control.scale({metric: true, imperial: false, maxWidth: 100, position: 'bottomright'}).addTo(map);
-        // Initialize CodeMirror editor
-         const editor = CodeMirror.fromTextArea(document.getElementById('geojson-input'), {
+
+//======================================================Initialize CodeMirror editor
+const editor = CodeMirror.fromTextArea(document.getElementById('geojson-input'), {
             mode: 'application/json',
             theme: 'dracula',
             lineNumbers: true,
@@ -68,12 +141,12 @@ L.control.scale({metric: true, imperial: false, maxWidth: 100, position: 'bottom
             lineWrapping: true,
             gutters: ['CodeMirror-lint-markers'],
             lint: true
-        }); 
+}); 
 
-
-//======================================================SEARCH LOCATION PLUGIN
+//======================================================SEARCH LOCATION 
 new L.Control.Geocoder({position: 'topleft'}).addTo(map);
-//PRINT MAP
+
+//=======================================================PRINT MAP
 L.control.bigImage({position: 'topleft'}).addTo(map);
 //======================================================Add the measurement control to the map
   var measureControl = new L.Control.PolylineMeasure({
@@ -105,7 +178,7 @@ L.control.bigImage({position: 'topleft'}).addTo(map);
   });
   
   measureControl.addTo(map);
-//======================================================mousemove coordinates
+//======================================================Mousemove coordinates
 const coordinates = document.getElementById("coordinates")
 function onMapMove(e){
     let lat = e.latlng.lat
@@ -119,81 +192,11 @@ function onMapMove(e){
 }
 map.on('mousemove', onMapMove)
 
-//======================================================Function to update map with geojson
-let geoJsonLayer = null;
-const errorElement = document.getElementById('error-message');
-
-function updateMapWithGeoJson() {
-  const geojsonInput = editor.getValue();
-  
-  try {
-    const geojsonData = JSON.parse(geojsonInput);
-    
-    if (!geojsonData.type) {
-      throw new Error("Invalid GeoJSON: Missing 'type' property");
-    }
-    
-    // Remove previous layers
-    if (geoJsonLayer) {
-      map.removeLayer(geoJsonLayer);
-    }
-    
-    // Clear drawLayer and rebuild from GeoJSON
-    drawLayer.clearLayers();
-    
-    geoJsonLayer = L.geoJSON(geojsonData, {
-      pointToLayer: function(feature, latlng) {
-        const marker = L.circleMarker(latlng, {
-          radius: 8,
-          fillColor: "#ff7800",
-          color: "#000",
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.8
-        });
-        
-        // Store the original feature data
-        marker.feature = feature;
-        return marker;
-      },
-      style: function(feature) {
-        return {
-          color: "#0066ff",
-          weight: 2,
-          opacity: 1
-        };
-      },
-      onEachFeature: function(feature, layer) {
-        // Add to drawLayer for editing
-        drawLayer.addLayer(layer);
-        
-        // Store the original feature data
-        layer.feature = feature;
-        
-        // Bind popup with all properties
-        if (feature.properties) {
-          // Format properties for display
-          const popupContent = Object.entries(feature.properties)
-            .map(([key, value]) => `<b>${key}:</b> ${value}`)
-            .join('<br>');
-          
-          layer.bindPopup(popupContent);
-        }
-      }
-    }).addTo(map);
-    
-    // Fit bounds if valid
-    if (geoJsonLayer.getBounds().isValid()) {
-      map.fitBounds(geoJsonLayer.getBounds());
-    }
-    
-    errorElement.textContent = '';
-  } catch (error) {
-    errorElement.textContent = 'Error: ' + error.message;
-  }
-}
 //======================================================Draw new features
-// Initialize draw controls with dynamic color
+// Get the color picker element
+const colorPicker = document.getElementById('color-picker');
+
+// Initialize draw controls with dynamic color (later)
 var drawControl = map.pm.addControls({
   position: 'topright',
   drawCircle: true,
@@ -219,8 +222,8 @@ var drawControl = map.pm.addControls({
     dashArray: '1,5',
   },
   pathOptions: {
-    color: "green", // Use selected color
-    fillColor: "green", // Same for fill (adjust if needed)
+    color: colorPicker.value, // Use selected color
+    fillColor: colorPicker.value, // Same for fill (adjust if needed)
     fillOpacity: 0.4,
   },
 });
@@ -228,11 +231,32 @@ var drawControl = map.pm.addControls({
 // Disable drawing mode for circles and markers by default (if needed)
 map.pm.disableDraw('Circle');
 map.pm.disableDraw('Marker');
-
+// Update color when a new color is picked
+colorPicker.addEventListener('input', function() {
+  map.pm.setPathOptions({
+    color: this.value,
+    fillColor: this.value, // Optional: Use a different fill color
+    fillOpacity: 0.4,
+  });
+});
 // Create a layer group for drawn shapes
-var drawLayer = L.layerGroup().addTo(map);
-
-
+//var drawLayer = L.layerGroup().addTo(map);
+//console.log(masterLayer)
+// Listen for when a new shape is created
+map.on('pm:create', function(e) {
+  const layer = e.layer;
+  
+  // Store the current color in the layer's properties
+  layer.feature = layer.feature || { type: 'Feature', properties: {}, geometry: null };
+  layer.feature.properties.color = colorPicker.value;
+  layer.feature.properties.fillOpacity = 0.4; // Optional: Store opacity too
+  
+  // Add the layer to masterLayer (if not already done automatically)
+  masterLayer.addLayer(layer);
+  
+  // Update the GeoJSON editor
+  updateEditorFromMasterLayer();
+});
 // Define debounce function (if not already defined)
 function debounce(func, wait = 300) {
   let timeout;
@@ -243,73 +267,30 @@ function debounce(func, wait = 300) {
 }
 
 //======================================================Convert Features to Geojson
-function convertToJSON(e) {
-  // Only add the layer for create events
-  if (e.type === 'pm:create') {
-    drawLayer.addLayer(e.layer);
-  }
-  
-  // Convert drawnLayer to JSON format
-  const geoJson = {
-    type: 'FeatureCollection',
-    features: drawLayer.getLayers().map(layer => {
-      // For markers
-      if (layer instanceof L.Marker) {
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
-          },
-          properties: layer.feature?.properties || {}
-        };
-      }
-      
-      // For other layers
-      const geojson = layer.toGeoJSON();
-      if (layer.feature?.properties) {
-        geojson.properties = {
-          ...geojson.properties,
-          ...layer.feature.properties
-        };
-      }
-      return geojson;
-    })
-  };
-
-  // Stringify GeoJSON with proper formatting
-  const geoJsonString = JSON.stringify(geoJson, null, 2);
-  
-  // Get current editor value
-  const currentValue = editor.getValue();
-  
-  // Only update if different to prevent infinite loops
-  if (currentValue !== geoJsonString) {
-    errorElement.textContent = '';
-    editor.setValue("");
-    editor.setValue(geoJsonString);
-  }
+function updateEditorFromMasterLayer() {
+    try {
+        // Convert FeatureGroup to GeoJSON
+        const geoJsonData = masterLayer.toGeoJSON();
+        
+        // Format as a pretty-printed JSON string
+        const geoJsonString = JSON.stringify(geoJsonData, null, 2);
+        
+        // Update CodeMirror editor content
+        editor.setValue(geoJsonString);       
+    } catch (err) {
+        console.error("Failed to export GeoJSON:", err);
+        editor.setValue("Error: Could not generate GeoJSON");
+    }
 }
 
-
-
-// Real-time updates while editing the text
-/* editor.on('change', debounce((instance) => {
-  try {
-    // Try to parse the current editor content
-    const parsedGeoJson = JSON.parse(instance.getValue());
-    // You could validate the GeoJSON here or update the map
-  } catch (e) {
-    console.error("Invalid GeoJSON:", e);
-  }
-}, 500)); */
+// Initialize editor with current masterLayer content
+updateEditorFromMasterLayer();
 
 //======================================================IMPORT DATA
 document.getElementById('import-geojson').addEventListener('click', () => {
 document.getElementById('geojson-file').click();
 });
 let importedLayer = null
-
 document.getElementById('geojson-file').addEventListener('change', function (event) {
     const file = event.target.files[0];
     if (file) {
@@ -317,17 +298,24 @@ document.getElementById('geojson-file').addEventListener('change', function (eve
         reader.onload = function (e) {
             try {
                 const geojsonData = JSON.parse(e.target.result); 
-                console.log(geojsonData)              
-                // Display the raw GeoJSON in the textarea
-                // Stringify GeoJSON with proper formatting
-                const geoJsonString = JSON.stringify(geojsonData, null, 2);  
-                    editor.setValue("");
-                    editor.setValue(geoJsonString);
-
+                
                 importedLayer = L.geoJSON(geojsonData, {
+                    // Apply style based on GeoJSON properties
+                    style: function(feature) {
+                        return {
+                            fillColor: feature.properties.color || '#3388ff', // Default blue if no color
+                            weight: 2,          // Border width
+                            opacity: 1,        // Border opacity
+                            color: feature.properties.color || '#3388ff',     // Border color
+                            fillOpacity: feature.properties.fillOpacity || 0.7 // Default fill opacity
+                        };
+                    },
                     onEachFeature: function (feature, layer) {
                         if (feature.properties) {
-                            // Create a popup content string with all properties
+                            addFeatures(layer);
+                            updateEditorFromMasterLayer();
+                            saveMasterLayer()
+                            // Create popup content
                             let popupContent = "<div>";
                             for (const key in feature.properties) {
                                 popupContent += `<strong>${key}:</strong> ${feature.properties[key]}<br>`;
@@ -335,11 +323,9 @@ document.getElementById('geojson-file').addEventListener('change', function (eve
                             popupContent += "</div>";
                             layer.bindPopup(popupContent);
                         }
-                    },
+                    }
                 }).addTo(map);
                 map.fitBounds(importedLayer.getBounds());
-                errorElement.textContent = '';
-
             } catch (error) {
                 console.error("Error loading GeoJSON:", error);
                 alert("Invalid GeoJSON file. Please check the format.");
@@ -347,85 +333,106 @@ document.getElementById('geojson-file').addEventListener('change', function (eve
         };
         reader.readAsText(file);
     }
-});  
+});
 
-//======================================================Remove all layers
-function removeAllLayers() {
-    // Store the base tile layers 
-    const baseLayers = [];
-    
-    // Get all layers that are tile layers 
-    map.eachLayer(function(layer) {
-        if (layer instanceof L.TileLayer) {
-            baseLayers.push(layer);
-        }
-    });
-    
-    // Clear all layers
-    map.eachLayer(function(layer) {
-        map.removeLayer(layer);
-        drawLayer.clearLayers();
-        editor.setValue("");
-
-    });
-    
-    // Add back the base tile layers
-    baseLayers.forEach(function(layer) {
-        map.addLayer(layer);
-    });
-    
-    // Reset any layer references
-    importedLayer = null;
-}
 //======================================================Edit Events
-map.on('pm:create', function(e) { convertToJSON(e);      errorElement.textContent = '';}); 
+function addFeatures(layer){
+                                  masterLayer.addLayer(layer);
+                                  saveMasterLayer()
+                                  console.log(masterLayer);
+}
+function removeFeatures(layer){
+                                  masterLayer.removeLayer(layer);
+                                  saveMasterLayer()
+
+}
+
+map.on('pm:create', function(e) {      
+                                  addFeatures(e.layer)
+                                  updateEditorFromMasterLayer()
+
+                                }); 
+
 map.on('pm:remove', function(e) { 
-    drawLayer.removeLayer(e.layer);
-    convertToJSON(e); });
-map.on('pm:globaldragmodetoggled', function(e) { convertToJSON(e);});
-map.on('pm:globaleditmodetoggled', function(e) { convertToJSON(e);})
-map.on('pm:globalrotatemodetoggled', function(e) { convertToJSON(e);})
+                                  drawLayer.removeLayer(e.layer);
+                                  removeFeatures(e.layer)
+                                  updateEditorFromMasterLayer()
+  });
+map.on('pm:globaldragmodetoggled', function(e) { 
+                                   updateEditorFromMasterLayer()
+});
+
+map.on('pm:globaleditmodetoggled', function(e) {  
+                                  updateEditorFromMasterLayer()
+})
+map.on('pm:globalrotatemodetoggled', function(e) {  
+  updateEditorFromMasterLayer()                                 
+})
 
 //======================================================Download Data
-  function down() {
-    if (!drawLayer || drawLayer.getLayers().length === 0) {
-      alert('No drawn elements to download!');
+function downloadMasterLayer() {
+          if (!masterLayer || masterLayer.getLayers().length === 0) {
+      alert('No elements to download!');
       return;
     }
+  try {
+    // Convert FeatureGroup to GeoJSON
+    const geoJsonData = masterLayer.toGeoJSON();
     
-    const geoJson = {
-      type: 'FeatureCollection',
-      features: drawLayer.getLayers().map(layer => {
-        // For markers
-        if (layer instanceof L.Marker) {
-          return {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
-            },
-            properties: layer.feature?.properties || {}
-          };
-        }
-        
-        // For other layers
-        const geojson = layer.toGeoJSON();
-        if (layer.feature?.properties) {
-          geojson.properties = {
-            ...geojson.properties,
-            ...layer.feature.properties
-          };
-        }
-        return geojson;
-      })
-    };
+    // Convert to formatted JSON string
+    const geoJsonString = JSON.stringify(geoJsonData, null, 2);
     
-    // Create a download link
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(geoJson, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', 'drawn_elements.geojson');
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    document.body.removeChild(downloadAnchor);
+    // Create download link
+    const blob = new Blob([geoJsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create temporary anchor element
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `map_data_${new Date().toISOString().slice(0,10)}.geojson`;
+    
+    // Trigger download
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+  } catch (err) {
+    console.error("Download failed:", err);
+    alert("⚠️ Failed to export GeoJSON\n" + err.message);
   }
+}
+
+//======================================================Copy Json
+function copyJSON() {
+  try {
+    // Get the current editor content
+    const content = editor.getValue();
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(content).then(() => {
+      
+      // Optional: Visual selection feedback
+      editor.execCommand("selectAll");
+      setTimeout(() => editor.execCommand("singleSelection"), 500);
+    }).catch(err => {
+      console.error("Copy failed:", err);
+      alert("❌ Failed to copy. Please try again or check console.");
+    });
+    
+  } catch (err) {
+    console.error("Copy error:", err);
+    alert("⚠️ Copy operation failed: " + err.message);
+  }
+}
+
+//======================================================Remove all layers (masterLayer)
+function removeAllLayers() {
+  masterLayer.clearLayers();
+  localStorage.removeItem('masterLayer');
+  updateEditorFromMasterLayer()
+}
