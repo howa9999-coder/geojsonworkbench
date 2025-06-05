@@ -111,7 +111,7 @@ header{
 /* Add this to your CSS */
 .CodeMirror {
   height: 100% !important;  /* Fixed height */
-  min-height: calc(100vh - 250px);
+  min-height: calc(100vh - 120px);
   width: 100%;    /* Full width of container */
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -152,4 +152,15 @@ header{
     font-size: 18px;
     padding: 10px;
     border: none;
+}
+#copy{
+    z-index: 100000000;
+    position: absolute;
+    top: 20px;
+    right: 40px;
+}
+#color-picker {
+  border: none;
+  margin-top: 8px;
+  width: 25px;
 }
