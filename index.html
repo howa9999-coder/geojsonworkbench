@@ -55,7 +55,7 @@
                 <!-- Menu Open (visible by default) -->
                 <svg class="icon icon-right" style="display:none;" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFB86C"><path d="M360-120v-720h80v720h-80Zm160-160v-400l200 200-200 200Z"/></svg>               
             </button>
-            <h2>Geojson <sub style="font-size: 10px; font-style: italic;">by Wahiba</sub></h2>
+            <h2 class="logo">Geojson <sub style="font-size: 10px; font-style: italic;">by Wahiba</sub></h2>
         </div>
         <div class="features">
             <input type="color" id="color-picker" name="color" value="#007bff">
@@ -94,11 +94,106 @@
                                                     -->
 
                         </div>
-                    </div>
-
                 </div>
-                <div class="help" style="display: none;">
-                    help
+
+                <div class="help" style="display: none;"> 
+                    <div class="help-container">
+                        <section>
+                            <h2>GeoJSON Workbench </h2>
+                            <p>
+                                GeoJSON Workbench is a lightweight, web-based GIS tool for creating, editing, and managing GeoJSON data. Inspired by geojson.io, it uses the Leaflet library to provide an intuitive mapping experience. Your work is automatically saved to your browser’s local storage, ensuring a seamless, offline-friendly workflow.
+                                Currently, the project is evolving to support entering and editing feature properties, enabling more detailed and structured spatial data management.                            
+                            </p>
+                        </section>
+
+                        <section>
+                            <h2>Key Features</h2>
+                            <ul>
+                            <li>Import/export GeoJSON files</li>
+                            <li>Locate a place</li>
+                            <li>Mesure distance/bearing</li>
+                            <li>Pick a color for the feature you'd like to draw</li>
+                            <li>Draw new features (points, lines, polygons)</li>
+                            <li>Edit geometries and properties</li>
+                            <li>Persistent storage via browser local storage</li>
+                            <li>Save your map as a PNG file</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h2>Getting Started</h2>
+
+                            <h3>I've Got Data</h3>
+                            <ul>
+                            <li>Drag & drop any GeoJSON file onto the map</li>
+                            <li>
+                                Use the "Import"
+                                <span class="icon import-icon"></span>
+                                button to load files from your device
+                            </li>
+                            <li>Your data will automatically save to browser storage</li>
+                            </ul>
+
+                            <h3>Drawing Features</h3>
+                            <ol>
+                            <li>Select a drawing tool (point, line, polygon)</li>
+                            <li>Click on the map to create features</li>
+                            <li>Double-click to finish drawing lines/polygons</li>
+                            <li>Features are saved automatically</li>
+                            </ol>
+                            <p class="note"><strong>Note:</strong> All new features will have empty properties by default (editable via the properties panel).</p>
+                        </section>
+
+                        <section>
+                            <h3>Editing Features</h3>
+
+                            <p class="section-subtitle">Geometry Editing:</p>
+                            <ul>
+                            <li>Select the editing tool</li>
+                            <li>Drag vertices to reshape features</li>
+                            <li>Press Delete to remove selected vertices/features</li>
+                            </ul>
+
+                            <p class="section-subtitle">Property Editing:</p>
+                            <p><strong>Coming Soon:</strong> Property editor for adding custom data to features</p>
+                        </section>
+
+                        <section>
+                            <h3>Saving Your Work</h3>
+                            <ul>
+                            <li>
+                                Use the "Export"
+                                <span class="icon export-icon"></span>
+                                button to download your GeoJSON
+                            </li>
+                            <li>Your work is automatically saved to browser storage</li>
+                            <li>
+                                Clear data with the "Reset"
+                                <span class="icon reset-icon"></span>
+                                button
+                            </li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h2>Technical Details</h2>
+                            <h3>Supported Formats</h3>
+                            <ul>
+                            <li>GeoJSON (full support)</li>
+                            </ul>
+
+                            <h3>Privacy</h3>
+                            <ul>
+                            <li>All data remains in your browser</li>
+                            <li>No information is sent to servers</li>
+                            <li>You maintain full ownership of your data</li>
+                            </ul>
+
+                            <div class="contact">
+                                    <p><strong>Need help or found a bug?</strong> Please <a href="mailto:wahibaadidi@gmail.com">contact us</a>.</p>
+                            </div>
+                        </section>
+                        </div>
                 </div>
             </div>
         </aside>
