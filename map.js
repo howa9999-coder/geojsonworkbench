@@ -31,7 +31,7 @@ if (navigator.geolocation) {
     alert("Geolocation is not supported by this browser")
 }
 
-//======================================================Layers
+//======================================================baseLayers
 
 var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -46,35 +46,9 @@ var CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all
 	subdomains: 'abcd',
 	maxZoom: 20
 });
-// const masterLayer = L.featureGroup().addTo(map);
 
-//============================================== MASTERlAYER
-/* // Try to load from localStorage
-let masterLayer;
+//========================================================masterLayer
 
-const storedLayer = localStorage.getItem('masterLayer');
-if (storedLayer) {
-  try {
-    // Parse the stored GeoJSON and create a feature group
-    const geojson = JSON.parse(storedLayer);
-    masterLayer = L.geoJSON(geojson).addTo(map);
-  } catch (e) {
-    console.error('Failed to parse stored layer:', e);
-    // Fallback to empty feature group
-    masterLayer = L.featureGroup().addTo(map);
-  }
-} else {
-  // Create new feature group if nothing is stored
-  masterLayer = L.featureGroup().addTo(map);
-}
-
-//Store masterLayer in the localstorage
-function saveMasterLayer() {
-  if (masterLayer) {
-    const geojson = masterLayer.toGeoJSON();
-    localStorage.setItem('masterLayer', JSON.stringify(geojson));
-  }
-} */
 let masterLayer;
 
 const storedLayer = localStorage.getItem('masterLayer');
@@ -86,10 +60,9 @@ if (storedLayer) {
     const style = (feature) => {
       return {
         color: feature.properties.color || '#3388ff', // Default color if none specified
-        weight: feature.properties.weight || 3,
+        weight: feature.properties.weight || 2,
         opacity: feature.properties.opacity || 0.7,
-        fillOpacity: feature.properties.fillOpacity || 0.4,
-        // Add any other style properties you want to support
+        fillOpacity: feature.properties.fillOpacity || 0.7,
       };
     };
 
@@ -239,9 +212,6 @@ colorPicker.addEventListener('input', function() {
     fillOpacity: 0.4,
   });
 });
-// Create a layer group for drawn shapes
-//var drawLayer = L.layerGroup().addTo(map);
-//console.log(masterLayer)
 // Listen for when a new shape is created
 map.on('pm:create', function(e) {
   const layer = e.layer;
@@ -354,19 +324,23 @@ map.on('pm:create', function(e) {
                                 }); 
 
 map.on('pm:remove', function(e) { 
-                                  drawLayer.removeLayer(e.layer);
+                                 // drawLayer.removeLayer(e.layer);
                                   removeFeatures(e.layer)
                                   updateEditorFromMasterLayer()
+                                  saveMasterLayer()
   });
 map.on('pm:globaldragmodetoggled', function(e) { 
                                    updateEditorFromMasterLayer()
+                                   saveMasterLayer()
 });
 
 map.on('pm:globaleditmodetoggled', function(e) {  
                                   updateEditorFromMasterLayer()
+                                  saveMasterLayer()
 })
 map.on('pm:globalrotatemodetoggled', function(e) {  
-  updateEditorFromMasterLayer()                                 
+  updateEditorFromMasterLayer()      
+  saveMasterLayer()                           
 })
 
 //======================================================Download Data
