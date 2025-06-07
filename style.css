@@ -66,10 +66,13 @@ button{
     border: none;
     cursor: pointer;
 }
-h2{
-    color: white;
+.logo{
+    color: white !important;
 }
 
+h2{
+    color: #fc9b34;
+}
 .hidden {
     display: none !important;
 }
@@ -108,7 +111,6 @@ header{
     color: white;
 }
 
-/* Add this to your CSS */
 .CodeMirror {
   height: 100% !important;  /* Fixed height */
   min-height: calc(100vh - 120px);
@@ -139,7 +141,7 @@ header{
 }
 
 .CodeMirror-scroll{
-    min-height: calc(100vh - 200px) !important;
+    min-height: calc(100vh - 100px) !important;
     width: 100% !important;
     overflow-y: scroll !important;
 }
@@ -163,4 +165,95 @@ header{
   border: none;
   margin-top: 8px;
   width: 25px;
+  border-radius: 50px;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  margin-top: 0px !important;
+}
+.help{
+    background-color: #282a36;
+    color: white;
+    margin-top: 0px !important;
+}
+
+.help-container {
+  margin: auto;
+  padding: 24px;
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: white;
+}
+
+.help-container h2 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5em;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 0.2em;
+}
+
+.help-container h3 {
+  font-size: 1.3rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.help-container ul,
+.help-container ol {
+  padding-left: 1.2em;
+  margin-bottom: 1em;
+}
+
+.help-container ul li,
+.help-container ol li {
+  margin-bottom: 0.5em;
+}
+
+.note {
+  font-size: 0.95rem;
+  margin-top: 0.5em;
+  color: #f8d1d1;
+}
+
+.section-subtitle {
+  font-weight: bold;
+  color: #a94442;
+  margin-top: 1em;
+}
+
+.contact {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+
+.contact a {
+  color: #4caf50;
+  text-decoration: none;
+}
+
+.contact a:hover {
+  text-decoration: underline;
+}
+
+/* Icon placeholders (replace with SVG or actual icons as needed) */
+.icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.import-icon {
+  background: url('data:image/svg+xml;utf8,<svg fill="%23FFB86C" viewBox="0 -960 960 960" xmlns="http://www.w3.org/2000/svg"><path d="M440-160v-326L336-382l-56-58 200-200 200 200-56 58-104-104v326h-80ZM160-600v-120q0-33 23.5-56.5T240-800h480q33 0 56.5 23.5T800-720v120h-80v-120H240v120h-80Z"/></svg>') no-repeat center/contain;
+}
+
+.export-icon {
+  background: url('data:image/svg+xml;utf8,<svg fill="%23FFB86C" viewBox="0 -960 960 960" xmlns="http://www.w3.org/2000/svg"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>') no-repeat center/contain;
+}
+
+.reset-icon {
+  background: url('data:image/svg+xml;utf8,<svg fill="%23FFB86C" viewBox="0 -960 960 960" xmlns="http://www.w3.org/2000/svg"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>') no-repeat center/contain;
 }
