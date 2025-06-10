@@ -50,31 +50,95 @@ var CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all
 //========================================================masterLayer
 
 let masterLayer;
-
 const storedLayer = localStorage.getItem('masterLayer');
 if (storedLayer) {
   try {
     const geojson = JSON.parse(storedLayer);
-    
+
     // Function to apply styles from feature properties
     const style = (feature) => {
       return {
-        color: feature.properties.color || '#3388ff', // Default color if none specified
+        color: feature.properties.color || '#3388ff',
         weight: feature.properties.weight || 2,
         opacity: feature.properties.opacity || 0.7,
         fillOpacity: feature.properties.fillOpacity || 0.7,
       };
     };
 
-    // Create the GeoJSON layer with custom styling
+    // Function to generate popup content
+    const generatePopupContent = (properties) => {
+      return Object.entries(properties).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join('<br>');
+    };
+
+    // onEachFeature handler to bind popup
+    const onEachFeature = (feature, layer) => {
+      if (feature.properties) {
+        const popupEl = document.createElement('div');
+        popupEl.style.fontFamily = 'Arial';
+        popupEl.style.padding = '5px';
+        popupEl.style.display = 'inline-block';
+        popupEl.style.whiteSpace = 'nowrap';
+        popupEl.style.maxWidth = 'none';
+        popupEl._layer = layer;
+
+        // Filter out style-related properties if needed
+        const headers = Object.keys(feature.properties).filter(
+          key => !['color', 'weight', 'opacity', 'fillOpacity'].includes(key)
+        );
+
+        const thead = headers.map((key, i) => `
+          <th>
+            <input type="text" value="${key}" oninput="renameHeader(this, ${i})">
+          </th>
+        `).join('') + '<th>Actions</th>';
+
+        const tds = headers.map(key => `
+          <td contenteditable="false">${feature.properties[key]}</td>
+        `).join('') + `<td><button onclick="toggleEdit(this)">Edit</button></td>`;
+
+        popupEl.innerHTML = `
+          <div style="margin-bottom: 10px;">
+            <button onclick="addColumn()">Add Column</button>
+          </div>
+          <table id="popupTable" style="border-collapse: collapse;">
+            <thead>
+              <tr id="headerRow">${thead}</tr>
+            </thead>
+            <tbody>
+              <tr>${tds}</tr>
+            </tbody>
+          </table>
+          <button onclick="saveTableData(this)">Save</button>
+        `;
+
+        layer.bindPopup(popupEl, { maxWidth: 'auto' });
+      }
+    };
+
+    // Create the GeoJSON layer with custom styling and popup behavior
     masterLayer = L.geoJSON(geojson, {
       style: style,
+      onEachFeature: onEachFeature,
       pointToLayer: (feature, latlng) => {
-        // Special handling for point features
         return L.circleMarker(latlng, style(feature));
       }
     }).addTo(map);
-    
+
+    // Only fit bounds if the layer has features
+    if (masterLayer.getLayers().length > 0) {
+      // Use setTimeout to ensure layer is fully rendered
+      setTimeout(() => {
+        try {
+          const bounds = masterLayer.getBounds();
+          if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+          }
+        } catch (e) {
+          console.error('Error fitting bounds:', e);
+        }
+      }, 100);
+    }
+
   } catch (e) {
     console.error('Failed to parse stored layer:', e);
     masterLayer = L.featureGroup().addTo(map);
@@ -82,6 +146,7 @@ if (storedLayer) {
 } else {
   masterLayer = L.featureGroup().addTo(map);
 }
+
 
 // Function to save the layer with all properties
 function saveMasterLayer() {
@@ -213,20 +278,93 @@ colorPicker.addEventListener('input', function() {
   });
 });
 // Listen for when a new shape is created
-map.on('pm:create', function(e) {
+map.on('pm:create', function (e) {
   const layer = e.layer;
-  
-  // Store the current color in the layer's properties
+
+  // Initialize feature properties
   layer.feature = layer.feature || { type: 'Feature', properties: {}, geometry: null };
   layer.feature.properties.color = colorPicker.value;
-  layer.feature.properties.fillOpacity = 0.4; // Optional: Store opacity too
-  
-  // Add the layer to masterLayer (if not already done automatically)
+  layer.feature.properties.fillOpacity = 0.4;
+
+  // Create popup content as DOM element (not a string)
+  const popupEl = document.createElement('div');
+  popupEl.style.fontFamily = 'Arial';
+  popupEl.style.padding = '5px';
+
+  // Store the layer reference directly on the popup DOM element
+  popupEl._layer = layer;
+
+  // Build inner HTML of popup
+  popupEl.innerHTML = `
+    <div style="margin-bottom: 10px;">
+      <button onclick="addColumn()">Add Column</button>
+    </div>
+    <table id="popupTable" style="border-collapse: collapse;">
+      <thead>
+        <tr id="headerRow">
+          <th><input type="text" placeholder="Column 1" oninput="renameHeader(this, 0)"></th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td contenteditable="false"></td>
+          <td><button onclick="toggleEdit(this)">Edit</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <button onclick="saveTableData(this)">Save</button>
+  `;
+
+  // Bind the popup element
+  layer.bindPopup(popupEl, {
+    maxWidth: 'auto'
+  });
+
+  // Add to master layer group
   masterLayer.addLayer(layer);
-  
-  // Update the GeoJSON editor
+
+  // Update GeoJSON editor
   updateEditorFromMasterLayer();
 });
+
+function saveTableData(button) {
+  const popup = button.closest('div');
+  const table = popup.querySelector('#popupTable');
+
+  const headerInputs = table.querySelectorAll('thead input');
+  const firstRow = table.querySelector('tbody tr');
+  const cells = firstRow ? firstRow.querySelectorAll('td') : [];
+
+  const layer = popup._layer;
+
+  if (layer) {
+    // Clear previous dynamic properties
+    for (const key in layer.feature.properties) {
+      if (!['color', 'fillOpacity', 'opacity', 'weight'].includes(key)) {
+        delete layer.feature.properties[key];
+      }
+    }
+
+    // Save only non-empty headers and values
+    for (let i = 0; i < headerInputs.length; i++) {
+      const key = headerInputs[i].value.trim();
+      const value = cells[i]?.textContent.trim();
+
+      if (key !== '' && value !== '') {
+        layer.feature.properties[key] = value;
+      }
+    }
+
+    // Update editor and save
+    updateEditorFromMasterLayer();
+    saveMasterLayer();
+  } else {
+    console.warn('⚠️ Layer not found. Could not save data.');
+  }
+}
+
+
 // Define debounce function (if not already defined)
 function debounce(func, wait = 300) {
   let timeout;
@@ -280,20 +418,51 @@ document.getElementById('geojson-file').addEventListener('change', function (eve
                             fillOpacity: feature.properties.fillOpacity || 0.7 // Default fill opacity
                         };
                     },
-                    onEachFeature: function (feature, layer) {
+                   onEachFeature: function (feature, layer) {
                         if (feature.properties) {
-                            addFeatures(layer);
-                            updateEditorFromMasterLayer();
-                            saveMasterLayer()
-                            // Create popup content
-                            let popupContent = "<div>";
-                            for (const key in feature.properties) {
-                                popupContent += `<strong>${key}:</strong> ${feature.properties[key]}<br>`;
-                            }
-                            popupContent += "</div>";
-                            layer.bindPopup(popupContent);
+                          addFeatures(layer);
+                          updateEditorFromMasterLayer();
+                          saveMasterLayer();
+
+                          const popupEl = document.createElement('div');
+                          popupEl.style.fontFamily = 'Arial';
+                          popupEl.style.padding = '5px';
+                          popupEl._layer = layer; // For saveTableData()
+
+                          // Create table HTML
+                          let headers = Object.keys(feature.properties).filter(
+                            key => key !== 'color' && key !== 'fillOpacity'
+                          );
+
+                          let thead = headers.map((key, i) => `
+                            <th>
+                              <input type="text" value="${key}" oninput="renameHeader(this, ${i})">
+                            </th>
+                          `).join('') + '<th>Actions</th>';
+
+                          let tds = headers.map(key => `
+                            <td contenteditable="false">${feature.properties[key]}</td>
+                          `).join('') + `<td><button onclick="toggleEdit(this)">Edit</button></td>`;
+
+                          popupEl.innerHTML = `
+                            <div style="margin-bottom: 10px;">
+                              <button onclick="addColumn()">Add Column</button>
+                            </div>
+                            <table id="popupTable" style="border-collapse: collapse;">
+                              <thead>
+                                <tr id="headerRow">${thead}</tr>
+                              </thead>
+                              <tbody>
+                                <tr>${tds}</tr>
+                              </tbody>
+                            </table>
+                            <button onclick="saveTableData(this)">Save</button>
+                          `;
+                      layer.bindPopup(popupEl, {
+                        maxWidth: 'auto'
+                      });
                         }
-                    }
+                      }
                 }).addTo(map);
                 map.fitBounds(importedLayer.getBounds());
             } catch (error) {
@@ -314,13 +483,11 @@ function addFeatures(layer){
 function removeFeatures(layer){
                                   masterLayer.removeLayer(layer);
                                   saveMasterLayer()
-
 }
 
 map.on('pm:create', function(e) {      
                                   addFeatures(e.layer)
                                   updateEditorFromMasterLayer()
-
                                 }); 
 
 map.on('pm:remove', function(e) { 
@@ -328,7 +495,7 @@ map.on('pm:remove', function(e) {
                                   removeFeatures(e.layer)
                                   updateEditorFromMasterLayer()
                                   saveMasterLayer()
-  });
+                                });
 map.on('pm:globaldragmodetoggled', function(e) { 
                                    updateEditorFromMasterLayer()
                                    saveMasterLayer()
