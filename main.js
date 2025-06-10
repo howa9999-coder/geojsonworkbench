@@ -70,3 +70,60 @@ function asideContent(block, none){
       none.style.display = 'none';
 }
 
+ function addColumn() {
+    const headerRow = document.querySelector('#headerRow');
+    if (!headerRow) return;
+
+    const colIndex = headerRow.cells.length - 1;
+    const newHeader = document.createElement('th');
+    newHeader.innerHTML = `<input type="text" placeholder="Column ${colIndex + 1}" oninput="renameHeader(this, ${colIndex})"> 
+`;
+    headerRow.insertBefore(newHeader, headerRow.lastElementChild);
+
+    const rows = document.querySelectorAll('#popupTable tbody tr');
+    rows.forEach(row => {
+      const newCell = document.createElement('td');
+      newCell.contentEditable = "false";
+      row.insertBefore(newCell, row.lastElementChild);
+    });
+  }
+
+  function renameHeader(input, index) {
+    input.placeholder = input.value || `Column ${index + 1}`;
+  }
+
+  function toggleEdit(button) {
+    const row = button.closest('tr');
+    const isEditing = row.classList.toggle('edit-mode');
+    const cells = row.querySelectorAll('td');
+    cells.forEach((cell, i) => {
+      if (i < cells.length - 1) {
+        cell.contentEditable = isEditing;
+      }
+    });
+    button.textContent = isEditing ? 'Save' : 'Edit';
+  }
+
+/* 
+function deleteColumn(button) {
+  const th = button.closest('th'); // find the column header
+  const headerRow = th.parentElement;
+  const thIndex = Array.from(headerRow.children).indexOf(th);
+
+  // Remove the header cell
+  th.remove();
+
+  // Remove the corresponding cell in each row
+  const table = button.closest('table');
+  const rows = table.querySelectorAll('tbody tr');
+  rows.forEach(row => {
+    const cell = row.children[thIndex];
+    if (cell) cell.remove();
+  });
+
+  // Optionally: update column indices in header inputs
+  const inputs = headerRow.querySelectorAll('input');
+  inputs.forEach((input, i) => {
+    input.setAttribute('oninput', `renameHeader(this, ${i})`);
+  });
+} */
